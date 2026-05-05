@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="pt-PT" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Consolidada - Simulado 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Fonte Arial e Tamanho Base 12pt */
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Contentor A4 Paisagem (297mm x 210mm) */
+        .document-container {
+            width: 297mm;
+            height: 210mm;
+            background: white;
+            padding: 8mm 10mm; 
+            box-sizing: border-box;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 15px 0;
+            border: 1px solid #e2e8f0;
+        }
+
+        @media print {
+            body { background: white; margin: 0; }
+            .document-container { 
+                margin: 0; 
+                border: none;
+                width: 297mm; 
+                height: 210mm;
+            }
+            .no-print { display: none; }
+            @page { size: A4 landscape; margin: 0; }
+        }
+
+        /* Estilos de Tabela */
+        .table-custom {
+            font-size: 8.1px; 
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .table-custom th {
+            background-color: #1e293b;
+            color: white;
+            padding: 3px 1px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid #000;
+        }
+
+        .table-custom td {
+            padding: 2.0px 2px;
+            border: 1px solid #94a3b8;
+            text-align: center;
+            line-height: 1.1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Coluna nome à esquerda */
+        .table-custom th:nth-child(2),
+        .table-custom td:nth-child(2) {
+            text-align: left !important;
+            padding-left: 5px !important;
+            width: 38%;
+        }
+        
+        .table-custom th:nth-child(1),
+        .table-custom td:nth-child(1) { width: 22px; }
+
+        .table-custom tr:nth-child(even) { background-color: #f8fafc; }
+        
+        /* Divisões do Layout */
+        .top-section {
+            display: grid;
+            grid-template-columns: 73% 25%;
+            gap: 2%;
+            height: 63%; 
+            min-height: 0;
+        }
+
+        .bottom-section {
+            height: 27%; 
+            width: 100%;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .chart-frame {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .ranking-container {
+            background-color: #fafafa;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .ranking-list {
+            font-size: 7.5px; 
+            line-height: 1.2;
+        }
+        
+        .ranking-item {
+            border-bottom: 0.5px solid #e2e8f0;
+            padding: 1.5px 0; 
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #000;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            border-left: 5px solid #be123c;
+            padding-left: 8px;
+        }
+
+        .header-main { font-size: 20px; font-weight: bold; }
+        .header-sub { font-size: 10px; font-weight: bold; color: #64748b; }
+    </style>
+</head>
+<body>
+
+    <!-- Barra de Ferramentas -->
+    <div class="max-w-[297mm] w-full mx-auto mt-6 mb-2 flex items-center justify-between no-print bg-white p-4 rounded-xl shadow-lg border border-slate-200">
+        <div class="flex items-center gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-slate-800">Simulado 2026: Consolidação de Dados</h2>
+                <p class="text-xs text-slate-500 font-medium italic">Arial 12 | Linha de Tendência | Gráfico Anônimo</p>
+            </div>
+            <select id="classSelector" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 font-bold outline-none focus:ring-rose-500 focus:border-rose-500">
+                <optgroup label="6.º Ano">
+                <option value="6F">6.º Ano F</option>
+                <option value="6E">6.º Ano E</option>
+                <option value="6D">6.º Ano D</option>
+                <option value="6C">6.º Ano C</option>
+                <option value="6B">6.º Ano B</option>
+                <option value="6A">6.º Ano A</option>
+                </optgroup>
+                <optgroup label="7.º Ano">
+                <option value="7A">7.º Ano A</option>
+                <option value="7B">7.º Ano B</option>
+                <option value="7C">7.º Ano C</option>
+                <option value="7D">7.º Ano D</option>
+                <option value="7E">7.º Ano E</option>
+                <option value="7F">7.º Ano F</option>
+                </optgroup>
+                <optgroup label="9.º Ano">
+                <option value="9A">9.º Ano A</option>
+                <option value="9B">9.º Ano B</option>
+                <option value="9C">9.º Ano C</option>
+                <option value="9D">9.º Ano D</option>
+                <option value="9E">9.º Ano E</option>
+                <option value="9F">9.º Ano F</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="flex gap-3">
+            <button id="downloadPdfBtn" class="px-6 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-lg text-xs font-bold shadow-md transition-all active:scale-95">
+                GERAR PDF
+            </button>
+            <button id="downloadImageBtn" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-md transition-all active:scale-95">
+                PNG (IMAGEM)
+            </button>
+        </div>
+    </div>
+
+    <!-- Relatório Documental -->
+    <div id="reportDocument" class="document-container">
+        
+        <header class="flex justify-between items-center border-b-2 border-black pb-3 mb-3">
+            <div>
+                <div class="header-main uppercase">EMEF Alberto Fernandes de Araújo</div>
+                <div class="header-sub uppercase tracking-widest">Secretaria de Educação de Araçariguama</div>
+            </div>
+            <div class="text-right">
+                <div class="text-rose-700 font-bold text-lg uppercase" id="reportTitle">Análise Consolidada</div>
+                <div class="text-[10px] font-bold text-slate-500 uppercase">Simulado: 1.º Bimestre / 2026</div>
+            </div>
+        </header>
+
+        <div class="top-section">
+            <div class="flex flex-col h-full overflow-hidden">
+                <div class="section-title">Quadro de Resultados (Apenas Presentes)</div>
+                <div class="overflow-hidden border border-black">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Nº</th>
+                                <th>Nome do Aluno</th>
+                                <th>LP</th><th>M</th><th>ING</th><th>ESP</th><th>EF</th><th>ART</th><th>GEO</th><th>HIS</th><th>CIE</th><th>FIL</th><th>INF</th>
+                                <th class="bg-black text-white">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex flex-col h-full overflow-hidden">
+                <div class="section-title" style="border-color: #3b82f6;">Classificação</div>
+                <div class="ranking-container flex-grow overflow-hidden">
+                    <div id="rankingListContainer" class="ranking-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="section-title" style="border-color: #10b981;">Análise Estatística de Acertos Totais</div>
+            <div class="bg-slate-50 border border-slate-300 rounded flex-grow p-1">
+                <div class="chart-frame">
+                    <canvas id="rankingChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-auto pt-2 flex justify-between items-center border-t border-slate-200">
+            <div class="text-[7px] font-bold text-slate-400 uppercase italic">Relatório Oficial de Desempenho - Araçariguama/SP</div>
+            <div class="text-[9px] font-bold text-slate-700 uppercase" id="footerStats"></div>
+            <div class="text-[8px] font-bold text-slate-400 uppercase" id="footerDate"></div>
+        </div>
+    </div>
+
+    <script>
+        const allData = {
+            '6F': [
+                { name: 'ARTHUR GALVÃO DA SILVA OLIVEIRA', scores: [5,4,3,3,3,3,3,3,3,3,3] },
+                { name: 'BERNARDO MILCZEVSKI SANTANA DA SILVA', scores: [3,5,2,3,2,3,2,1,0,0,0] },
+                { name: 'DANIEL ALVES DOS SANTOS LIMA', scores: [5,4,1,2,3,2,2,1,0,1,2] },
+                { name: 'DAVI LUIS SANTOS DE MELO', scores: [3,3,1,3,3,1,2,1,1,2,3] },
+                { name: 'FERNANDA EMILIANO MACIEL DA SILVA', scores: [4,4,1,2,2,3,2,2,2,3,2] },
+                { name: 'GRAZIELA DA SILVA QUARESMA', scores: [3,3,1,1,3,3,3,1,1,3,2] },
+                { name: 'GUILHERME LUCAS DOURADO DE OLIVEIRA', scores: [5,4,2,2,3,3,2,1,1,0,1] },
+                { name: 'ISABELLA VITORIA DE OLIVEIRA GUIMARAES', scores: [1,4,2,1,1,2,3,1,1,1,1] },
+                { name: 'JOÃO OTÁVIO ALAMINO MARTIMIANO', scores: [3,2,1,1,1,1,1,0,0,1,3] },
+                { name: 'KAIKY AUGUSTO DA SILVA OLIVEIRA', scores: [3,2,1,2,1,1,0,0,0,0,2] },
+                { name: 'LARA VIEIRA SILVA', scores: [4,4,3,2,2,3,2,2,2,1,2] },
+                { name: 'LAURA BEATRIZ PREVIATO VIEIRA', scores: [2,4,0,1,1,2,2,1,2,3,0] },
+                { name: 'LAYS DE OLIVEIRA LIMA', scores: [0,0,1,1,1,1,1,2,0,2,2] },
+                { name: 'LIVIA DA SILVA GARCIA', scores: [5,3,2,2,3,2,2,2,1,0,3] },
+                { name: 'LORENNA VITORIA DOS SANTOS NUNES', scores: [4,3,1,0,2,1,2,1,1,0,2] },
+                { name: 'LUIS DIEGO FRANCO DE MESQUITA', scores: [2,4,1,1,1,0,3,1,2,1,3] },
+                { name: 'MATHEUS GABRIEL DE SOUZA SANTOS', scores: [2,1,1,2,1,2,2,2,1,2,1] },
+                { name: 'MAYK PAULINO DOS SANTOS', scores: [1,3,2,1,2,3,2,0,1,2,1] },
+                { name: 'MELISSA CAROLINE DE JESUS CARVALHO', scores: [3,4,2,2,3,3,2,2,1,2,2] },
+                { name: 'PEDRO HENRIQUE OLIVEIRA DOS SANTOS', scores: [4,4,2,2,3,3,2,1,1,1,2] },
+                { name: 'PIETRO GABRIEL ALMEIDA DA SILVA', scores: [5,2,1,2,2,3,2,2,0,2,1] },
+                { name: 'RAIANY ISABELLA RODRIGUES BARCA', scores: [4,4,2,1,2,3,2,1,1,1,2] },
+                { name: 'RYAN PIETRO DA SILVA BRITO', scores: [4,4,1,2,2,3,1,0,1,3,2] },
+                { name: 'SALOMAO ALEXANDRE ALVES DOS SANTOS', scores: [2,1,1,2,1,0,2,0,2,2,1] },
+                { name: 'SERGIO AMORIM DA SILVA', scores: [0,3,1,0,0,3,1,2,1,0,2] },
+                { name: 'VITOR RENÊ SILVA DOS SANTOS', scores: [5,3,2,1,3,3,3,3,1,1,3] },
+                { name: 'WILIAN FAUSTO SILVA', scores: [1,3,2,1,0,0,1,0,1,0,0] }
+            ],
+            '6E': [
+                { name: 'ANA JULIA CHAVES OLIVEIRA', scores: [4,3,2,0,2,3,0,2,2,2,2] },
+                { name: 'ARTHUR LEITE DE OLIVEIRA SANTOS', scores: [3,3,2,0,2,3,2,1,1,1,2] },
+                { name: 'ARTHUR MIGUEL VAZ SILVA', scores: [3,5,2,1,3,3,3,0,1,1,1] },
+                { name: 'DANIEL AMORIM DA SILVA', scores: [0,1,0,0,1,1,1,0,0,1,1] },
+                { name: 'DAVI LUCAS AQUINO COSTA', scores: [5,4,2,2,3,2,2,0,1,1,2] },
+                { name: 'EDUARDO DA CUNHA ANDRADE', scores: [5,4,2,2,2,3,3,2,2,3,3] },
+                { name: 'ELOISA MARINHO REGO', scores: [5,3,2,0,1,3,2,0,1,1,2] },
+                { name: 'EMANUELY CARDOSO LIMA', scores: [2,1,1,1,1,2,1,1,0,1,2] },
+                { name: 'ESTER AGUIAR MORENO', scores: [4,3,2,2,2,3,2,1,1,0,0] },
+                { name: 'GEOVANA BARRETOS MEDEIROS', scores: [0,4,1,1,1,1,1,1,2,1,2] },
+                { name: 'HELENA DOS SANTOS BORGES', scores: [3,3,2,1,1,3,2,0,0,1,0] },
+                { name: 'HUGO VIEIRA MORAES', scores: [3,3,2,0,2,3,3,1,1,2,2] },
+                { name: 'JOÃO HENRYKE DOS SANTOS BACELAR', scores: [2,4,1,1,1,2,1,0,1,1,1] },
+                { name: 'JOÃO LUKAS FRAZÃO DA SILVA', scores: [4,4,1,2,1,3,2,3,1,2,3] },
+                { name: 'JOAO VICTOR PEREIRA DOS SANTOS SANTANA', scores: [2,1,1,2,2,3,2,2,1,1,3] },
+                { name: 'LAYSA VITORIA CARDOSO ALVES', scores: [4,2,2,2,3,2,1,0,0,1,1] },
+                { name: 'LUCAS AMARAL DE ALMEIDA', scores: [3,3,2,0,2,2,1,1,3,1,0] },
+                { name: 'MARIA SOFIA DE OLIVEIRA PAIÃO', scores: [5,4,1,2,3,2,2,2,1,1,2] },
+                { name: 'MARIANELA VALENTINA PADILLA PINO', scores: [4,2,2,2,1,2,1,1,3,1,2] },
+                { name: 'MATHEUS PETRICK BARRETO FRANHANI', scores: [2,3,2,1,1,3,1,0,1,2,3] },
+                { name: 'MIGUEL FERRAZ FAVERO', scores: [3,5,2,0,3,3,3,1,2,1,3] },
+                { name: 'NICKSON BENICIO DA SILVA SANTUCCI', scores: [3,3,1,2,1,3,2,2,0,1,2] },
+                { name: 'NICOLAS JOAQUIM SILVA ARAÚJO', scores: [4,4,2,1,2,3,1,0,1,2,1] },
+                { name: 'PAMELA ALEXANDRA CASTELLANOS RIVERO', scores: [1,2,2,2,1,2,1,1,3,0,1] },
+                { name: 'SOFIA FERNANDES RODRIGUES', scores: [3,3,2,2,3,3,3,3,3,0,3] },
+                { name: 'SOPHIA IZABEL ALVES LOPES', scores: [1,2,2,2,1,1,0,0,0,0,0] },
+                { name: 'HELENA VITORIA VITOR DE OLIVEIRA', scores: [1,0,0,2,0,2,2,1,1,0,3] }
+            ],
+            '6D': [
+                { name: 'ANA JULIA EMILIANO DIAS', scores: [3,3,2,2,3,3,1,1,2,1,1] },
+                { name: 'ANA VICTORIA DA SILVA CIRIACO', scores: [1,1,1,2,1,1,2,2,1,0,2] },
+                { name: 'ANDRÉ LUIZ PACHECO DA SILVA', scores: [3,4,2,2,3,3,2,3,1,2,1] },
+                { name: 'ARTHUR FALASCHI GONZAGA DE LIMA', scores: [4,4,1,0,1,0,1,1,1,1,3] },
+                { name: 'ARTHUR VIEIRA DE OLIVEIRA', scores: [4,3,2,2,2,3,0,2,0,2,1] },
+                { name: 'BEATRIZ MESQUITA LIMA', scores: [3,4,2,2,3,3,2,2,1,1,1] },
+                { name: 'DAVI RODRIGUES LACERDA', scores: [5,5,2,2,3,3,3,3,2,3,3] },
+                { name: 'FILIPE DE SOUZA ALVES', scores: [3,4,2,3,1,0,2,2,1,0,0] },
+                { name: 'HAYRON SAMUEL PEREIRA', scores: [1,1,1,1,0,1,0,1,1,1,0] },
+                { name: 'JOAO PEDRO SILVA DE OLIVEIRA', scores: [1,3,2,1,2,3,2,0,1,0,0] },
+                { name: 'JULIA GABRIELA FERREIRA LESSA', scores: [2,1,2,1,3,3,1,2,3,2,3] },
+                { name: 'KEVILYN CRISTINA PEREIRA TOBIAS', scores: [4,2,2,1,3,3,2,2,0,1,3] },
+                { name: 'KIMBERLLY BARBOSA GONCALVES', scores: [2,1,0,2,0,3,2,3,0,2,1] },
+                { name: 'MARIA JÚLIA DOS SANTOS SILVA', scores: [1,2,1,2,1,2,2,2,2,1,2] },
+                { name: 'MATEUS DO CARMO MARTIMIANO', scores: [5,3,2,1,2,3,3,2,1,1,2] },
+                { name: 'MIGUEL CAVALCANTE CALIXTO DE OLIVEIRA', scores: [2,3,2,2,1,3,2,3,1,0,0] },
+                { name: 'MIGUEL TOLOTTI GOMES', scores: [4,3,2,2,3,3,3,2,0,2,3] },
+                { name: 'NATAN LUIZ DA SILVA', scores: [4,3,1,2,2,1,2,1,0,1,2] },
+                { name: 'OSCARINA DEL VALLE GUILLEN MORENO', scores: [1,0,1,2,3,3,3,1,0,1,2] },
+                { name: 'PEDRO LEONARDO LEITE KUESTEIS', scores: [4,4,1,1,2,2,3,2,1,1,1] },
+                { name: 'PEDRO MIGUEL DO CARMO BRITO', scores: [2,3,1,2,2,3,2,2,1,0,3] },
+                { name: "SAMUEL DOS ANJOS SANT'ANA", scores: [2,3,1,1,3,2,2,0,1,0,0] },
+                { name: 'SARAH SOPHIA GONÇALVES PIRES', scores: [5,4,2,2,2,3,2,2,1,2,3] },
+                { name: 'VITORIA EDUARDA MARTINS ROCHA', scores: [2,2,3,1,1,3,1,1,2,1,1] }
+            ],
+            '6C': [
+                { name: 'ANNA LAYS DA SILVA FRANCA', scores: [0,1,2,1,1,1,2,0,0,1,2] },
+                { name: 'ARTHUR DARROS SILVA', scores: [2,5,2,2,2,3,2,3,0,1,3] },
+                { name: 'ARTHUR MIGUEL DE OLIVEIRA GOMES DE ARAÚJO', scores: [3,3,1,1,1,3,2,2,1,0,1] },
+                { name: 'DAVI MESSIAS DE JESUS SOUZA', scores: [3,2,0,1,2,3,1,2,0,0,1] },
+                { name: 'DAVI SANTOS DA SILVA', scores: [2,2,0,2,2,2,2,3,1,2,3] },
+                { name: 'EMILLY DOS SANTOS BARRAL', scores: [3,3,2,1,1,2,1,1,2,1,0] },
+                { name: 'FRANCISCO LUCAS GONÇALVES LEITE', scores: [3,2,1,1,2,2,2,1,3,2,1] },
+                { name: 'GUILHERME SANTOS RODRIGUES', scores: [4,3,2,2,1,3,3,2,1,0,3] },
+                { name: 'LARAH CRISTINA BARBOSA SARTI', scores: [3,4,1,2,2,3,3,2,0,0,2] },
+                { name: 'LEONARDO CORREA BARROS', scores: [2,3,1,1,1,2,1,2,2,2,2] },
+                { name: 'LEVY FONSECA DE SOUZA', scores: [5,5,2,2,3,3,2,2,1,3,2] },
+                { name: 'LUCAS ARAÚJO ANDRADE DOS SANTOS', scores: [3,4,2,1,2,3,3,2,1,0,2] },
+                { name: 'LUIZ OTAVIO SALLES DE OLIVEIRA', scores: [1,1,1,1,1,2,1,2,2,3,3] },
+                { name: 'MIGUELIANNIS DEL CARMEN GUEVARA LA ROSA', scores: [3,4,0,2,2,2,3,3,0,2,3] },
+                { name: 'NICOLE NATALIE NASCIMENTO DIAS', scores: [3,1,2,1,2,3,3,3,1,1,2] },
+                { name: 'PEDRO HENRIQUE FERREIRA DE SOUSA', scores: [2,5,0,2,2,2,3,2,1,0,2] },
+                { name: 'PEDRO MIGUEL OFENAS DE ANDRADE RODRIGUES', scores: [3,3,2,2,1,3,3,3,1,3,3] },
+                { name: 'SARAH LUIZA BARBOSA SARTI', scores: [5,4,2,2,2,3,2,2,1,3,2] },
+                { name: 'SOFIA VITORIA PEREIRA DA SILVA', scores: [2,4,1,3,1,0,0,0,0,0,2] },
+                { name: 'STHENYO RENAN TAVARES DA SILVA', scores: [5,2,1,3,2,2,2,2,2,0,2] },
+                { name: 'SULMARY CESILIA ORDUZ MENDOZA', scores: [3,2,2,2,3,2,1,1,1,2,3] },
+                { name: 'THAYNA SANTOS SILVA', scores: [3,4,2,2,3,3,2,3,1,2,1] },
+                { name: 'ANA GABRIELLE', scores: [4,2,2,0,2,3,3,1,1,0,1] }
+            ],
+            '6B': [
+                { name: 'AUGUSTO DAMIAO VERISSIMO', scores: [5,4,2,3,2,3,3,3,3,2,3] },
+                { name: 'BÁRBARA DOS SANTOS DUARTE', scores: [4,4,1,0,2,3,2,3,0,0,2] },
+                { name: 'DAVI LUIZ ALMEIDA SANTOS', scores: [3,4,2,2,0,3,1,2,2,1,3] },
+                { name: 'DAVI PEREIRA LAZARO', scores: [3,2,1,1,1,2,0,0,0,0,1] },
+                { name: 'DAVID LUCAS ALVES TEIXEIRA DOS SANTOS', scores: [4,4,2,1,1,3,1,2,0,3,2] },
+                { name: 'EDUARDO MONTEIRO SOUSA SANTOS', scores: [2,1,1,1,0,2,3,1,1,1,0] },
+                { name: 'GUSTAVO BENEDITO RIBEIRO RODRIGUES', scores: [2,4,2,1,3,3,1,0,0,0,2] },
+                { name: 'GUSTAVO HENRIQUE LUCENA DE LIMA', scores: [2,2,0,2,2,1,3,3,1,2,1] },
+                { name: 'HENNAN DOS SANTOS SERAFIM', scores: [4,5,2,2,2,3,3,3,2,1,3] },
+                { name: 'HENRIQUE NORATO ALMEIDA', scores: [4,4,2,1,3,2,2,2,2,0,2] },
+                { name: 'JADSON HENRIQUE BARBOSA DA SILVA', scores: [1,1,0,2,1,3,1,0,0,0,1] },
+                { name: 'JHENNIFER MARIA NASCIMENTO RODRIGUES', scores: [3,5,1,2,3,3,2,3,3,2,2] },
+                { name: 'JOAO AUGUSTO DE SOUZA LEMOS', scores: [4,4,1,2,1,2,3,1,1,2,1] },
+                { name: 'JOÃO PEDRO OLIVEIRA DA SILVA', scores: [2,4,1,1,2,0,2,2,2,2,3] },
+                { name: 'JOSE YURE SANTIAGO DA SILVA', scores: [1,4,2,2,2,3,2,1,0,0,3] },
+                { name: 'JULIA OLIVEIRA MACIEL', scores: [2,4,1,0,3,3,3,3,3,0,2] },
+                { name: 'KAUÂ GABRIEL DE ALMEIDA DOS SANTOS', scores: [2,3,2,1,3,3,2,2,2,0,0] },
+                { name: 'LARA DE MORAES REIS', scores: [2,2,2,1,3,1,0,2,2,1,2] },
+                { name: 'LUIZA AZEVEDO DA FONSECA', scores: [3,2,2,2,0,3,1,0,1,2,2] },
+                { name: 'LUIZA VIDAL DA SILVA', scores: [5,3,1,2,3,3,3,3,3,1,3] },
+                { name: 'MELISSA ESTEVES RODRIGUES', scores: [3,3,1,2,1,1,1,2,1,1,2] },
+                { name: 'MIGUEL NARCISO GONCALVES DA SILVA', scores: [3,3,1,2,2,3,2,3,1,1,2] },
+                { name: 'NATHAN NEDO GALDINO SILVA', scores: [4,4,2,1,3,3,3,3,2,2,3] },
+                { name: 'PEDRO HENRIQUE TENORIO GONCALVES', scores: [5,3,2,2,2,3,1,2,2,2,3] },
+                { name: 'RAFAELA VICTÓRIA DA SILVA MACIEL', scores: [2,2,0,2,1,3,2,1,1,0,2] },
+                { name: 'REBECA DOS SANTOS ARAUJO GOMES', scores: [1,4,1,1,3,2,2,2,1,1,2] },
+                { name: 'SAMOEL NICOLAS DO NASCIMENTO PEREIRA', scores: [2,1,1,0,1,1,0,0,0,0,1] }
+            ],
+            '7A': [
+                { name: 'AMANDA LARA LARGURA', scores: [2,3,1,2,0,1,1,1,1,3,1] },
+                { name: 'AMANDA OLIVEIRA DOS SANTOS', scores: [3,5,0,3,0,2,1,0,3,3,1] },
+                { name: 'BRENDA VITORIA BARBOSA DOS SANTOS', scores: [3,4,1,3,2,2,2,1,3,3,1] },
+                { name: 'CLARA VITORIA VIEIRA LIMA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'EMIRIANYELIS CELESTE BETANCOURT NUNEZ', scores: [2,3,2,3,0,2,2,3,3,3,0] },
+                { name: 'ENZO GABRIEL CONCEIÇÃO SOARES', scores: [4,4,0,3,3,2,2,2,2,2,1] },
+                { name: 'GABRIELY CARDOSO BARROS', scores: [4,2,1,3,1,3,2,1,3,3,1] },
+                { name: 'JOÃO HENRYCK DOS SANTOS PATRICIO', scores: [3,1,1,3,0,3,2,2,3,1,1] },
+                { name: 'JULIA ROCHA SANTOS', scores: [4,3,2,2,2,1,2,2,3,2,2] },
+                { name: 'KAYO OMENA DUARTE', scores: [4,2,0,3,1,1,3,1,1,3,0] },
+                { name: 'LAVÍNIA MACIEL SANTOS DE ALMEIDA', scores: [4,5,1,3,2,2,3,1,3,2,0] },
+                { name: 'LEONARDO LOPES DE OLIVEIRA', scores: [5,1,1,3,0,0,2,0,1,2,1] },
+                { name: 'LOHANA RAMOS FARIAS', scores: [1,5,1,1,0,2,1,0,1,2,0] },
+                { name: 'LUANA GABRIELLY ARAUJO DE OLIVEIRA', scores: [4,5,0,2,1,3,2,2,3,3,1] },
+                { name: 'LUCAS CAMPOS LEAL FILHO', scores: [5,3,0,2,0,2,1,1,3,2,1] },
+                { name: 'LUCAS TELES LEONARDO', scores: [3,2,2,2,2,2,1,1,2,3,0] },
+                { name: 'LUCCAS ADRIANO DE CARVALHO PEREIRA', scores: [4,4,2,3,1,2,2,3,3,3,2] },
+                { name: 'LUIZ AUGUSTO DA SILVA SANTOS', scores: [2,1,1,2,1,2,2,0,2,3,0] },
+                { name: 'LUNA DE MELO PAIVA', scores: [3,3,1,2,2,3,1,3,2,2,1] },
+                { name: 'LUNNA LAVIGNE BARBOSA SANTOS', scores: [4,1,1,3,0,1,2,1,2,2,1] },
+                { name: 'MAIKON BARBOSA OLIVEIRA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'MARIA LUIZA BENIGNO NASCIMENTO', scores: [3,2,2,1,1,2,0,0,2,1,1] },
+                { name: 'MIGUEL FARIAS DE OLIVEIRA', scores: [2,2,1,2,1,0,1,1,2,3,1] },
+                { name: 'MIGUEL PORTO FERNANDES DE FARIAS', scores: [4,3,1,2,2,2,3,1,2,2,1] },
+                { name: 'NICOLAS LIMA SOARES', scores: [4,3,1,3,0,1,2,0,2,3,1] },
+                { name: 'RAFAEL EMILIANO MACIEL DA SILVA', scores: [4,5,0,2,0,1,2,1,3,3,1] },
+                { name: 'SAMUEL ANDRADE DOS SANTOS', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+            ],
+            '7B': [
+                { name: 'ANA BEATRYZ MARQUES MARTINS', scores: [2,3,1,3,1,1,1,2,2,1,0] },
+                { name: 'AUGUSTO BELCHIOR DIAS', scores: [4,4,2,1,1,3,2,2,2,3,0] },
+                { name: 'CRISTAL HELENA ASSALIN GOMES', scores: [1,1,0,3,0,2,0,0,1,1,1] },
+                { name: 'DYLAN LEONARDO MARCANO ROSAL', scores: [1,2,1,3,1,3,0,1,3,1,0] },
+                { name: 'EMANUELE KETELIN MARTINS FAVERO', scores: [1,1,2,0,1,0,1,1,1,0,1] },
+                { name: 'GEOVANA RODRIGUES DA SILVA', scores: [4,2,1,3,2,3,2,2,3,2,1] },
+                { name: 'GUSTAVO DE JESUS SANTOS', scores: [2,3,1,3,0,1,0,1,2,1,1] },
+                { name: 'ICARO RIAN DA SILVA', scores: [4,1,2,3,0,1,0,1,3,1,0] },
+                { name: 'JOAO GABRIEL FERNANDES GUILHERME', scores: [1,2,2,1,1,0,2,2,2,0,0] },
+                { name: 'JOAQUIM CAETANO OLIVEIRA VIEIRA', scores: [4,3,1,2,1,2,2,1,3,2,1] },
+                { name: 'JONATHA AUGUSTO DOS SANTOS DE AZEVEDO', scores: [4,5,1,2,1,1,0,2,3,3,1] },
+                { name: 'JULIA EDUARDA RAIMUNDO DA SILVA', scores: [4,3,0,3,2,2,2,3,3,3,0] },
+                { name: 'JULIO CESAR ASSALIN GOMES', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'KAUAN RODRIGUES DOS SANTOS', scores: [4,4,1,3,1,1,0,1,1,2,1] },
+                { name: 'LAÍS ALVES DOS SANTOS', scores: [5,0,1,3,1,1,2,2,2,3,1] },
+                { name: 'LUIZ MIGUEL MARTINS SANTOS', scores: [2,2,1,2,1,2,1,1,2,2,1] },
+                { name: 'MARIA LUIZA BENIGNO NASCIMENTO', scores: [3,2,0,3,0,3,1,0,0,1,2] },
+                { name: 'MARIA LUIZA NASCIMENTO', scores: [3,2,0,3,1,3,0,1,2,1,2] },
+                { name: 'MELISSA VICTORIA MOUSINHO GUILHERME', scores: [1,2,1,2,0,0,0,2,0,0,1] },
+                { name: 'MIGUEL MONTEIRO DE FRANCA', scores: [4,3,1,3,0,3,2,2,3,3,2] },
+                { name: 'NATHALI OLIVEIRA VILAR', scores: [4,1,0,3,0,2,1,2,2,3,1] },
+                { name: 'NATHALIA SANTOS SOUZA', scores: [5,4,1,3,0,2,1,3,2,3,0] },
+                { name: 'PEDRO CAETANO RIBEIRO', scores: [3,3,1,3,0,2,2,0,1,2,0] },
+                { name: 'TALITA GABRIELE OLIVEIRA LIMA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'VITORIA CRISTINA DE JESUS SANTOS', scores: [3,5,1,2,2,2,3,3,1,3,1] },
+                { name: 'YAN DOS SANTOS TEIXEIRA', scores: [2,4,1,3,0,1,2,2,1,3,0] },
+                { name: 'YASMIN OLIVEIRA DE SOUSA', scores: [4,3,1,2,0,3,0,1,1,3,2] },
+                { name: 'ANA LAURA SENA', scores: [2,3,0,2,2,3,1,2,1,2,0] },
+            ],
+            '7C': [
+                { name: 'ALICE AMORIM DA SILVA', scores: [3,3,1,3,0,3,2,2,0,3,1] },
+                { name: 'ANA CAROLINE PEREIRA DE SOUZA', scores: [2,2,0,2,1,1,3,3,1,1,1] },
+                { name: 'ANA VICTORIA OLIVEIRA DA SILVA', scores: [3,3,1,2,2,1,1,3,1,3,1] },
+                { name: 'ARTHUR SILVA AMARANTE', scores: [3,2,2,2,0,0,1,0,1,1,1] },
+                { name: 'BEATRIZ PACHECO DA SILVA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'BRAYAN MAIKE DOS SANTOS CANDIDO', scores: [3,5,1,3,1,1,2,1,2,3,2] },
+                { name: 'DANILO ALDRIS DOS SANTOS', scores: [2,3,0,3,1,2,2,1,1,3,1] },
+                { name: 'DAVI LUCCA NERES PINHEIRO', scores: [4,4,1,3,0,3,2,3,3,3,1] },
+                { name: 'FRANCISCO MARCOS DE BARROS AGUIAR', scores: [4,4,1,3,1,2,0,1,3,3,1] },
+                { name: 'JOSE ANGEL BARRETO ALVAREZ', scores: [1,2,1,3,0,0,0,1,0,3,0] },
+                { name: 'JUAN VITOR VIEIRA LEMOS', scores: [2,3,1,3,1,2,1,2,3,1,2] },
+                { name: 'LEVI COSTA DA SILVA', scores: [2,2,0,1,1,3,2,2,2,2,2] },
+                { name: 'LUIZ FERNANDO DUTRA LOPES', scores: [4,3,1,2,1,1,0,1,2,3,2] },
+                { name: 'MARIA CLARA OLIVEIRA ANDRADE DE SANTANA', scores: [3,2,1,3,0,0,2,0,1,3,0] },
+                { name: 'MARIA EDUARDA DE OLIVEIRA GONZAGA', scores: [3,1,0,2,0,1,1,0,3,3,0] },
+                { name: 'MARIA ISABELLY SANTOS EMILIANO', scores: [5,3,1,2,1,2,1,0,2,2,1] },
+                { name: 'MELISSA PEREIRA DOS SANTOS REIS', scores: [4,4,0,3,0,1,1,3,1,3,1] },
+                { name: 'MIGUEL HENRIQUE DOS SANTOS', scores: [3,5,0,3,2,3,0,0,2,2,1] },
+                { name: 'PEDRO HENRIQUE GOMES NASCIMENTO', scores: [4,1,1,3,1,1,2,2,2,2,2] },
+                { name: 'SANTIAGO JOSE CHIGUITA RODRIGUEZ', scores: [1,3,1,1,1,2,0,0,0,0,1] },
+                { name: 'SOPHIA BEATRIZ FERRAZ DE CARVALHO LIMA', scores: [3,3,1,3,0,2,1,0,3,3,1] },
+                { name: 'TAYLON THALLYS MARTINS VIANA NERY', scores: [4,4,0,3,1,1,1,0,1,3,0] },
+                { name: 'THAIS ISABELLY PEREIRA DA SILVA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'VINICIUS BORDINHON', scores: [4,5,1,1,0,2,2,3,3,3,2] },
+                { name: 'VITORIA EDUARDA SANTOS EMILIANO', scores: [1,4,1,1,1,1,0,0,1,1,3] },
+                { name: 'YTALO RIKELME NASCIMENTO DOS SANTOS', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+            ],
+            '7D': [
+                { name: 'ANABELLA OLIVEIRA MIRANDA', scores: [3,0,1,3,1,1,2,1,2,3,1] },
+                { name: 'BRAYAN HENRIQUE MARTINS SANTOS', scores: [3,3,2,2,0,0,1,0,0,1,1] },
+                { name: 'CAUA HENRIQUE RAMOS BORBA', scores: [4,2,2,3,1,1,3,1,3,3,0] },
+                { name: 'ELOIZA VICTORIA GODINHO GUIMARÃES', scores: [4,5,1,3,1,2,2,1,3,2,1] },
+                { name: 'EMANUELLY VITÓRIA NUNES DA SILVA', scores: [4,4,1,3,2,1,0,2,1,3,2] },
+                { name: 'ENZO ANDRADE BARBOSA', scores: [3,1,1,1,0,1,1,1,1,1,0] },
+                { name: 'FERNANDA VITORIA ALVES BARBOZA', scores: [3,2,1,3,1,2,2,0,2,3,2] },
+                { name: 'GABRIEL GINUINO DA SILVA', scores: [4,2,1,2,0,1,2,1,1,1,0] },
+                { name: 'GABRIELLE CRISTINA ALVES DOS SANTOS', scores: [2,1,0,3,1,1,0,2,0,1,1] },
+                { name: 'GUILHERME OLIVEIRA DA SILVA', scores: [0,1,1,1,0,2,1,1,2,0,1] },
+                { name: 'ISADORA APARECIDA BARBOZA FERREIRA', scores: [3,2,1,3,0,2,1,0,2,1,0] },
+                { name: 'IZABELY LORETA SILVA LUIZ', scores: [5,0,0,3,0,3,2,1,2,2,0] },
+                { name: 'JOAO MIGUEL SOUZA LEAL', scores: [4,3,1,3,0,3,1,2,2,3,0] },
+                { name: 'LAISA FREITAS LIMA', scores: [4,3,1,2,0,2,0,2,1,3,0] },
+                { name: 'LAURA VITORIA NICOLAU MOURA', scores: [3,1,0,3,0,2,1,1,1,0,1] },
+                { name: 'LORENA OLIVEIRA DE ANDRADE', scores: [3,3,1,2,1,3,2,2,1,2,1] },
+                { name: 'LUIZ MIGUEL MARTINS SANTOS', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'MARCOS GABRIEL GONÇALVES DO NASCIMENTO', scores: [1,0,1,2,0,0,1,2,0,2,0] },
+                { name: 'MARIA CLARA LEITE DE ALMEIDA DA SILVA', scores: [4,2,1,3,0,1,1,0,2,1,0] },
+                { name: 'MELISSA DA SILVA DE SOUZA', scores: [4,3,1,3,2,1,0,1,1,2,0] },
+                { name: 'MIGUEL LOPES VIEIRA', scores: [3,3,1,3,1,3,1,2,3,2,1] },
+                { name: 'RAY SANTOS MUNIS', scores: [3,1,1,3,1,2,1,2,1,1,0] },
+                { name: 'RIAN DE JESUS OLIVEIRA', scores: [3,1,2,2,0,2,0,1,2,3,2] },
+                { name: 'RUAN PACHECO JUCA DA SILVA', scores: [4,1,1,3,1,1,1,2,1,3,1] },
+                { name: 'RUANDERSON EMANUEL TEIXEIRA DA SILVA', scores: [1,0,0,1,1,1,1,2,1,2,0] },
+                { name: 'STEPHANNY DE MOURA GONCALVES', scores: [4,1,2,3,0,2,0,2,0,1,1] },
+                { name: 'VITOR LIRA ALVES DE SOUZA', scores: [3,2,1,3,1,2,2,0,3,2,1] },
+                { name: 'YOHAN THOMAZ DIONISIO DE OLIVEIRA', scores: [3,5,1,2,0,3,1,1,3,2,1] },
+                { name: 'YULIET NAZARET EVARISTO GONZALEZ', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+            ],
+            '7E': [
+                { name: 'ANA JULIA DOS SANTOS CORREIA', scores: [4,0,1,2,1,2,2,0,2,3,0] },
+                { name: 'ANABELLA BREDOF DE SOUZA FERREIRA', scores: [4,2,1,2,0,2,2,2,2,3,2] },
+                { name: 'ARIEL KAIQUE VIEIRA DA SILVA', scores: [5,1,1,3,0,1,1,1,2,3,0] },
+                { name: 'CESAR ANDRES GUERRA CALDERA', scores: [2,1,1,0,1,2,1,1,2,0,1] },
+                { name: 'DANIELE MIECZINSKI PEREIRA', scores: [4,0,1,3,2,2,1,0,1,2,1] },
+                { name: 'DAVI FERNANDO DOS SANTOS SILVA', scores: [4,3,2,3,2,1,0,3,1,3,1] },
+                { name: 'GABRIEL HENRIQUE DA SILVA', scores: [4,4,1,2,1,2,2,2,2,3,1] },
+                { name: 'GIOVANNA SILVA MACHADO', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'GUILHERME SILVA XAVIER', scores: [4,2,1,3,1,2,3,3,3,3,1] },
+                { name: 'HEITOR FERNANDES BARROS', scores: [5,5,1,2,2,3,2,1,3,3,1] },
+                { name: 'HUGO HENRIQUE DA SILVA CUNHA', scores: [5,1,1,3,0,0,2,2,2,3,0] },
+                { name: 'ISIS FERNANDA ABREU LARANGEIRA', scores: [4,1,1,2,0,3,3,3,3,3,2] },
+                { name: 'JAZIEL FRANCISCO DA SILVA PEREIRA', scores: [4,1,1,2,0,2,1,1,2,2,1] },
+                { name: 'JHONATA EDUARDO DOS SANTOS SILVA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'JOAO MIGUEL LOPES DE MIRANDA', scores: [3,3,0,2,1,3,2,1,2,2,1] },
+                { name: 'JONATHAN NATAN DE MORAIS FRANÇA', scores: [3,3,1,3,1,1,1,0,3,2,0] },
+                { name: 'KAUAN HENRIQUE TORRES SOUZA', scores: [4,1,1,3,1,1,2,0,3,2,0] },
+                { name: 'LORENA ESTEVES LIMA', scores: [4,0,2,3,1,2,1,1,2,2,1] },
+                { name: 'LUIZ FERNANDO ZORZETTO HONORIO', scores: [2,2,1,2,1,1,2,1,3,3,1] },
+                { name: 'LUIZ HENRIQUE DE BEZERRA VAZ', scores: [2,2,0,2,0,1,2,2,2,2,0] },
+                { name: 'MANUELLA LEITE DA SILVA', scores: [5,2,1,2,2,2,1,0,2,3,1] },
+                { name: 'MANUELLA RIBEIRO FISCHER', scores: [5,3,1,3,1,2,1,2,3,3,1] },
+                { name: 'MARCOS GABRIEL DO CARMO SANTOS', scores: [2,2,0,0,1,1,0,0,2,1,1] },
+                { name: 'MARIA EDUARDA DOS SANTOS OLIVEIRA', scores: [3,2,1,3,0,1,1,1,3,3,0] },
+                { name: 'MELISSA SANTANA DA SILVA', scores: [3,1,1,2,0,2,2,3,2,3,0] },
+                { name: 'MISAEL DAVID PINO PINANGO', scores: [3,2,1,3,0,1,0,1,3,1,1] },
+                { name: 'NOHELYMAR PAMELA ARTEAGA SANDOVAL', scores: [2,2,1,3,2,1,1,0,2,2,0] },
+                { name: 'PEDRO HENRIQUE VICENTE DOS SANTOS', scores: [4,2,1,1,0,2,0,0,1,1,1] },
+                { name: 'QUEZIA MARQUES DE CARVALHO', scores: [4,4,1,1,0,1,3,3,3,3,1] },
+                { name: 'SAMUEL ANTONIO BEZERRA DA SILVA', scores: [3,2,1,3,1,2,2,2,3,2,1] },
+                { name: 'YASMIN DE OLIVEIRA LIMA', scores: [3,3,0,2,1,0,0,0,1,3,1] },
+            ],
+            '7F': [
+                { name: 'ABNER SAMUEL DA SILVA SANTO MENDES', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'ANA LAURA APARECIDA DE SENA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'ARTHUR MENDES PEREIRA', scores: [3,2,1,2,1,2,2,1,1,1,1] },
+                { name: 'ASHILEY PEREIRA DUARTE', scores: [4,1,1,3,0,2,0,1,2,3,1] },
+                { name: 'BRYAN MELLO DA SILVA', scores: [2,4,0,2,2,1,2,1,3,2,0] },
+                { name: 'DAVI LUCIANO DA SILVA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'EVERTON DOUGLAS DOS SANTOS SOUZA', scores: [3,1,1,1,1,0,1,1,1,1,1] },
+                { name: 'JAMILLY VIEIRA DANTAS', scores: [0,0,1,1,1,1,0,0,1,2,1] },
+                { name: 'JOAO VICTOR RODRIGUES DA SILVA', scores: [4,2,0,2,0,2,2,3,2,2,0] },
+                { name: 'KAIO JORGE PEDROSO DINIZ', scores: [2,3,0,2,1,0,1,0,3,1,0] },
+                { name: 'KAYKE DA SILVA RIBEIRO', scores: [3,1,1,3,0,2,1,1,3,1,1] },
+                { name: 'LAURA SANTOS FERREIRA DE SOUZA', scores: [3,2,0,3,0,1,1,1,1,3,0] },
+                { name: 'LEANDRO HENRIQUE DOURADO PAIVA', scores: [3,1,2,3,0,1,2,1,1,3,0] },
+                { name: 'LIVIA DA SILVA MARTINS', scores: [3,2,1,1,0,3,0,1,2,3,0] },
+                { name: 'LORENA FERREIRA CUSTODIO', scores: [3,3,2,2,1,0,0,2,0,3,0] },
+                { name: 'LUAN HENRIQUE DA SILVA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'LUIZ MIGUEL OLIVEIRA DE ARAÚJO', scores: [4,3,1,3,0,2,1,2,1,2,1] },
+                { name: 'MARIA EDUARDA ARRUDA SABINO DA SILVA', scores: [4,1,0,3,0,2,1,3,2,2,1] },
+                { name: 'MARIA YSADORA DA SILVA', scores: [5,1,0,2,2,1,1,1,2,3,0] },
+                { name: 'MELISSA TRINDADE CARVALHO', scores: [4,4,1,1,0,3,2,2,3,3,0] },
+                { name: 'MIGUEL ANTONIO PINHEIRO DA SILVA GREJO', scores: [4,2,2,2,1,2,0,1,2,3,1] },
+                { name: 'MIGUEL DE OLIVEIRA SOUSA', scores: [2,0,1,2,0,1,0,0,3,2,1] },
+                { name: 'MIGUEL DIONISIO CIRIC DE SOUZA', scores: [4,1,1,0,1,1,1,1,0,1,2] },
+                { name: 'TALLES RAFAEL DOS SANTOS SILVA', scores: [3,1,0,3,0,2,2,1,3,2,1] },
+                { name: 'THEO SOUZA SILVA', scores: [3,2,0,1,1,0,2,0,0,2,1] },
+                { name: 'YASMIN VICTORIA DE SOUZA OLIVEIRA', scores: [4,4,2,3,0,3,1,1,0,3,1] },
+                { name: 'YNGRID VITORIA DE ANDRADE CHAVES', scores: [4,4,1,3,2,3,3,2,3,3,1] },
+            ],
+            '9A': [
+                { name: 'ANA CLARA DA SILVA DOS REIS', scores: [4,5,1,3,3,1,0,2,1,1,0] },
+                { name: 'ANA CLARA DE CARVALHO MACHADO', scores: [1,4,2,3,1,1,2,1,1,2,2] },
+                { name: 'ARYANE AYSLA SILVERIO', scores: [1,4,0,3,0,2,1,1,0,1,0] },
+                { name: 'BIANCA RODRIGUES ALMEIDA', scores: [3,5,2,3,3,1,0,2,1,3,0] },
+                { name: 'BRYAN ISAAC CORREA DE JESUS', scores: [2,5,0,3,3,0,1,2,2,1,2] },
+                { name: 'DAVI LATURAGUE OLIVEIRA SANTOS', scores: [1,5,1,3,2,1,2,1,2,1,0] },
+                { name: 'DOUGLAS SANTANA SOUZA', scores: [4,4,2,3,3,2,3,2,2,1,2] },
+                { name: 'EDEN LUCAS PEREIRA DA SILVA FILHO', scores: [2,3,0,3,2,1,2,2,1,1,1] },
+                { name: 'FELIPE PAZ DE OLIVEIRA', scores: [3,5,2,3,3,1,2,3,2,2,0] },
+                { name: 'GABRIEL DA SILVA ANDRADE DE OLIVEIRA', scores: [0,3,0,1,1,1,1,1,1,2,1] },
+                { name: 'GABRIELA BLANCO MINGORANS LIMA', scores: [3,5,1,3,0,2,1,2,3,1,2] },
+                { name: 'HIAGO LUIS GALVAO DA SILVA', scores: [0,1,1,1,0,3,0,2,1,0,0] },
+                { name: 'ISAC ALVES DOS SANTOS', scores: [1,4,0,3,2,0,0,2,1,2,0] },
+                { name: 'JOAO CARLOS AZEREDO NOGUEIRA', scores: [2,3,1,3,3,1,1,0,1,3,1] },
+                { name: 'LARA TOLOTTI GOMES', scores: [2,5,2,3,3,0,2,1,1,2,2] },
+                { name: 'LAURA FINARDI CECILIANO', scores: [4,3,0,3,3,0,1,3,1,2,2] },
+                { name: 'LUIS GUSTAVO SIMIONI SOARES', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'MARIA GABRIELA SOUZA PINHEIRO', scores: [4,4,0,2,3,2,2,1,2,2,0] },
+                { name: 'MIGUEL MARTINS OLIVEIRA', scores: [5,5,0,3,2,2,0,3,2,1,1] },
+                { name: 'MIRELLA APARECIDA RODRIGUES', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'MIRELLA SILVA SANTOS', scores: [3,4,0,2,3,0,1,2,1,2,0] },
+                { name: 'NAYARA VILLAS BOAS SANTOS', scores: [0,2,0,3,2,3,2,1,2,1,2] },
+                { name: 'RAFAEL RODRIGUES MARQUES JUNIOR', scores: [2,5,2,3,2,2,3,2,2,2,1] },
+                { name: 'RAFAELA SERNAGLIA', scores: [4,5,2,2,2,2,2,3,2,2,2] },
+                { name: 'RENATO OLIVEIRA SALDANHA DOS SANTOS', scores: [4,4,1,3,3,1,3,3,1,2,1] },
+            ],
+            '9B': [
+                { name: 'ADRIELY VITORIA DE OLIVEIRA MARTIMIANO', scores: [2,4,1,3,1,1,0,0,1,1,2] },
+                { name: 'ALAN SOUZA DE PAULO', scores: [2,5,1,3,1,1,1,1,1,2,1] },
+                { name: 'BRUNO HENRIQUE RODRIGUES DE CARVALHO', scores: [4,5,0,2,1,0,1,2,1,2,1] },
+                { name: 'CAUAN DUARTE LOPES', scores: [1,4,1,2,1,0,1,1,2,2,1] },
+                { name: 'CLARISSA PALMIRA BARBOSA INCAU', scores: [0,5,0,3,2,1,2,0,1,1,1] },
+                { name: 'DIENYFER RIBEIRO RATO', scores: [0,5,3,3,3,2,1,1,0,2,1] },
+                { name: 'ENZO AUGUSTO SILVA SOUZA MOREIRA DOS SANTOS', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'GABRIEL HENRIQUE PRADO DA SILVA', scores: [3,4,0,2,2,2,3,2,1,2,1] },
+                { name: 'GABRIELA BLANCO MINGORANS LIMA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'GABRIELA SOUZA SANTOS', scores: [0,5,3,2,1,3,1,0,2,3,1] },
+                { name: 'GUILHERME DE SOUZA ALMEIDA', scores: [5,5,2,3,3,2,3,3,2,2,2] },
+                { name: 'ISABELLY ILANA OLIVEIRA MORENO', scores: [2,4,1,3,3,0,2,0,0,2,0] },
+                { name: 'JAIANE DOS SANTOS DE AZEVEDO', scores: [0,4,2,3,2,1,3,2,1,3,0] },
+                { name: 'KAIQUE SOUZA SILVA', scores: [4,5,1,3,3,0,1,1,1,2,2] },
+                { name: 'LORENA ATANAZIO GERMANO', scores: [2,5,0,3,3,2,2,2,1,3,1] },
+                { name: 'LORENA MONTEIRO MOREIRA', scores: [4,5,1,3,1,2,3,2,2,2,3] },
+                { name: 'LUCAS RODRIGUES DA SILVA', scores: [1,4,0,3,1,0,1,1,3,1,2] },
+                { name: 'MARIA RITA BENIGNO NASCIMENTO', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'MARIA VITORIA DA SILVA', scores: [0,4,2,3,1,0,1,1,2,3,0] },
+                { name: 'MICAELA PEREIRA NASCIMENTO', scores: [4,5,2,3,3,1,0,3,2,2,2] },
+                { name: 'MIGUEL KLINGER DE JESUS HENN', scores: [3,5,1,3,3,0,0,1,3,2,2] },
+                { name: 'MISAEL SILVA DE DEUS SANTOS', scores: [1,4,0,3,3,2,0,2,1,2,1] },
+                { name: 'NATHAN MEDEIROS DOS SANTOS RUBIM', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'OSCAR RAFAEL GUILLEN MORENO', scores: [0,3,1,3,2,2,0,0,1,1,2] },
+                { name: 'PAOLA HENRIQUE CAMARGO', scores: [2,3,0,3,1,2,0,0,2,2,0] },
+                { name: 'PEDRO KAIQUE ALVES DA SILVA', scores: [0,2,2,3,1,2,1,0,2,0,0] },
+                { name: 'RENATO DA SILVA SANTOS', scores: [2,3,1,3,3,1,2,1,3,2,0] },
+            ],
+            '9C': [
+                { name: 'AGATHA JULIA MAGALHAES LIMA', scores: [0,4,0,2,1,2,1,1,0,3,1] },
+                { name: 'ALICE MARQUES PERTANELA', scores: [2,5,0,3,1,1,3,3,3,2,2] },
+                { name: 'ARTHUR DOS SANTOS CARVALHO', scores: [3,4,1,3,3,1,3,1,1,1,1] },
+                { name: 'BERNARDO OLIVEIRA SILVA', scores: [1,5,0,3,3,2,0,3,1,2,1] },
+                { name: 'CRISTHIAN RENANN RODRIGUES DA CRUZ', scores: [2,5,0,3,2,1,3,0,2,2,2] },
+                { name: 'DAYSA ERIKA DE LIMA', scores: [0,3,1,3,2,2,1,1,2,1,0] },
+                { name: 'ERINYER YONAIFER SANOJA VILLASMIL', scores: [3,4,0,3,2,0,0,1,0,2,2] },
+                { name: 'GABRIEL DE SOUZA D\'OLIVEIRA', scores: [2,5,0,3,3,2,3,2,2,2,2] },
+                { name: 'GABRIEL LUCAS ALVES BARBIM', scores: [3,5,0,3,3,1,3,1,2,2,1] },
+                { name: 'GABRIELA ABREU BARROS SOUSA', scores: [4,5,2,3,3,0,3,3,2,2,1] },
+                { name: 'GABRYELLE ALVES DOS SANTOS', scores: [1,5,1,3,2,0,3,1,1,3,2] },
+                { name: 'GEOVANA FLORIPES IVERSEN', scores: [2,5,0,3,2,1,1,2,1,2,0] },
+                { name: 'GUSTAVO ALVES DA SILVA', scores: [3,5,0,3,2,1,1,1,1,1,1] },
+                { name: 'HELLEN CRISTINE NUNES DA SILVA', scores: [1,5,1,2,3,1,2,1,1,2,1] },
+                { name: 'HELLEN VITORIA SOARES DA COSTA', scores: [4,5,1,3,0,1,3,1,1,3,1] },
+                { name: 'HELLOA CARVALHO DOS SANTOS', scores: [2,5,1,2,3,1,1,0,2,3,1] },
+                { name: 'IZABELLA ALVES RODRIGUES DE LIMA', scores: [4,5,2,3,1,1,3,3,3,2,2] },
+                { name: 'KAUE FERREIRA MARTINS', scores: [1,4,1,3,2,2,3,1,2,2,1] },
+                { name: 'LAIS LAVINIA DA SILVA GARCIA', scores: [1,3,1,3,0,1,1,1,1,3,0] },
+                { name: 'LETICIA ELOA DA SILVA SANTOS', scores: [3,5,2,3,2,2,3,2,2,2,2] },
+                { name: 'MATHEUS TAIRONE OLIVEIRA LIMA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'PATRICK LEONARDO DOS SANTOS SILVA', scores: [2,4,1,2,3,1,1,2,2,2,2] },
+                { name: 'PEDRO FRANCISCO DA SILVA OLIVEIRA', scores: [2,5,0,0,2,1,3,3,3,2,2] },
+                { name: 'RUAN GUILHERME ALVES DA SILVA', scores: [2,5,0,3,0,1,0,1,2,1,0] },
+                { name: 'THAMYRES VIEIRA DANTAS', scores: [3,4,0,3,2,2,2,1,2,3,2] },
+                { name: 'MARIA RITA BENIGNO NASCIMENTO', scores: [3,5,0,3,2,0,1,1,1,1,1] },
+            ],
+            '9D': [
+                { name: 'ALANA LUI NORDI', scores: [3,5,2,3,3,1,3,3,2,2,2] },
+                { name: 'ANA BEATRIZ MARTINS MORAES', scores: [2,2,0,1,3,2,2,2,1,1,2] },
+                { name: 'ANA GABRIELLY OLIVEIRA DE CARVALHO', scores: [3,2,0,3,3,2,0,0,2,2,2] },
+                { name: 'ANA JULIA SILVA LUIZ', scores: [0,2,0,3,2,1,1,1,1,3,0] },
+                { name: 'ANTONIA GRAZYELLE ANTUNES LEITE', scores: [1,5,1,2,1,2,2,2,1,2,2] },
+                { name: 'ARTHUR SILVA DE OLIVEIRA', scores: [3,4,0,2,2,1,1,0,2,2,1] },
+                { name: 'BEATRIZ GODOY JESUS MENDES', scores: [2,4,0,3,2,3,0,3,2,2,2] },
+                { name: 'BRENO HENRIQUE MANDELLI DE SOUZA', scores: [1,5,2,3,1,1,3,3,2,2,2] },
+                { name: 'CARLOS GABRIEL AQUINO DE LIRA', scores: [1,5,1,1,1,1,1,0,2,2,0] },
+                { name: 'CLARA MELYSSA CAMARGO DE LIMA', scores: [4,3,0,3,3,2,1,1,1,2,2] },
+                { name: 'DAFNI DE ALMEIDA CASTRO', scores: [0,3,0,2,0,0,1,1,3,3,2] },
+                { name: 'DENNYS RHYAN SILVA DE OLIVEIRA', scores: [1,4,2,3,2,1,0,2,3,2,1] },
+                { name: 'GABRIEL RABETTI MONTEIRO RODRIGUES', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'JOAO OTAVIO PEREIRA CAMARGO', scores: [0,3,1,2,2,0,1,0,0,2,1] },
+                { name: 'KAUAN ROBERTO RIBEIRO DE SOUSA', scores: [3,5,2,3,2,2,0,2,3,3,2] },
+                { name: 'LAIS MORAES VILHENA LOPES ROCHA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'LEANDERSON GABRIEL BARACHO DA SILVA', scores: [2,4,1,3,3,0,1,1,2,1,0] },
+                { name: 'LOANNY VICTÓRIA SOUSA LINS', scores: [2,4,0,3,2,0,1,2,1,3,1] },
+                { name: 'LORENZO DOS SANTOS SOARES', scores: [2,4,0,3,1,2,2,3,1,2,1] },
+                { name: 'LUIS EDUARDO MARCANO FUENTES', scores: [4,2,1,3,3,1,1,3,1,2,2] },
+                { name: 'LUIZ MARIO SOARES SEVERINO DOS SANTOS', scores: [2,5,1,3,3,3,1,3,2,2,2] },
+                { name: 'MANUELLA RODRIGUES GODOY', scores: [1,5,0,3,1,1,2,0,1,2,1] },
+                { name: 'NICOLAS DE OLIVEIRA SILVA', scores: [3,5,1,3,1,0,0,2,1,2,1] },
+                { name: 'NOEMI DOS SANTOS SOUZA', scores: [1,5,1,3,1,2,2,1,2,2,2] },
+                { name: 'PEDRO HENRIQUE COSTA DE SOUZA DE JESUS SILVA', scores: [3,4,1,3,2,0,2,1,2,2,1] },
+                { name: 'REBECA ALVES DE JESUS', scores: [1,1,0,3,2,0,0,1,2,3,3] },
+                { name: 'YURI GABRIEL DE SOUZA SILVA', scores: [4,3,0,3,1,0,2,3,1,1,0] },
+                { name: 'YURI GUSTAVO MORAES DA SILVA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+            ],
+            '9E': [
+                { name: 'ALICE MARQUES PERTANELA', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'ANA VITORIA DE LIMA DIAS', scores: [2,4,0,3,2,0,1,1,2,2,1] },
+                { name: 'BIANCA SILVA DE OLIVEIRA', scores: [1,4,1,3,1,2,1,2,2,2,2] },
+                { name: 'BRENO GABRIEL SILVA DE OLIVEIRA', scores: [3,4,0,3,1,2,3,2,1,2,2] },
+                { name: 'CAMILA SANTIAGO DE SOUZA', scores: [2,4,1,3,1,3,1,1,1,3,0] },
+                { name: 'CAROLINE DE ALMEIDA SANTOS', scores: [0,5,0,3,3,0,1,2,0,2,0] },
+                { name: 'DAYARA LORRANE MOREIRA GOMES', scores: [3,3,0,3,3,0,0,1,1,2,0] },
+                { name: 'DIEGO SEBASTIAN CUMARIN CABRERA', scores: [1,2,0,3,3,1,3,1,1,2,0] },
+                { name: 'EDUARDA RAFAELLY TORRES', scores: [1,3,0,3,0,2,2,1,2,1,2] },
+                { name: 'EMANUELY VITÓRIA DA SILVA FERNANDES', scores: [0,3,0,3,3,1,2,2,2,1,1] },
+                { name: 'EVELEN SANTANA DE JESUS', scores: [1,2,0,3,3,1,2,1,1,2,0] },
+                { name: 'GABRIEL ALCANTARA DIAS', scores: [1,5,0,2,3,0,0,2,1,2,0] },
+                { name: 'GUILHERME AUGUSTO ALVES CARVALHO DE OLIVEIRA', scores: [3,5,1,3,2,1,2,2,1,3,1] },
+                { name: 'GUSTAVO PAULO MARCIANO', scores: [0,5,0,3,1,1,0,2,1,2,0] },
+                { name: 'IAN GREGORIO BRANDÃO', scores: [1,5,2,3,3,3,3,3,2,3,2] },
+                { name: 'JOAO GUSTAVO RODRIGUES SILVA3', scores: [2,5,1,3,0,1,2,2,2,2,1] },
+                { name: 'KAIQUE DOS SANTOS', scores: [1,2,0,3,1,2,2,1,1,1,1] },
+                { name: 'KENNEDY MAYAN GOMES D\'ALMEIDA', scores: [1,1,0,2,2,2,2,1,2,3,1] },
+                { name: 'KETHYLIN ALAMINO CAVALCANTE', scores: [0,0,0,0,0,0,0,0,0,0,0] },
+                { name: 'LAURA ISABELLY DA SILVA SOUZA', scores: [3,4,0,3,1,1,2,0,2,1,0] },
+                { name: 'MARIA EDUARDA FERRACINI DE OLIVEIRA', scores: [2,5,1,3,3,1,3,3,3,2,2] },
+                { name: 'MARIA EDUARDA SALES CAMILO', scores: [2,4,1,2,2,0,1,1,1,2,2] },
+                { name: 'MATHEUS DOS ANJOS SANT\'ANA', scores: [1,5,0,3,3,2,1,2,2,3,1] },
+                { name: 'MATHEUS HENRIQUE DA SILVA MARTINS', scores: [1,5,0,3,3,0,2,1,1,2,1] },
+                { name: 'PALLOMA RIBEIRO DA COSTA PINHEIRO', scores: [2,3,1,3,3,1,0,1,2,3,1] },
+                { name: 'PEDRO HENRIQUE OLIVEIRA DA SILVA', scores: [1,2,1,1,2,1,0,1,0,0,1] },
+                { name: 'RENAN MELO DE PAULO', scores: [2,0,0,1,1,0,0,0,1,1,0] },
+                { name: 'SOPHIA DE ANDRADE GOIS', scores: [0,5,0,3,3,2,0,1,0,2,1] },
+            ],
+            '9F': [
+                { name: 'ALICE DA SILVA ARAUJO', scores: [3,1,3,3,1,1,3,1,1,2,2] },
+                { name: 'DAVI WILSON LOPES DE ALMEIDA', scores: [4,5,1,2,3,2,2,2,1,1,2] },
+                { name: 'ELOYSA CASSEANO AMORIM', scores: [3,1,0,3,1,3,0,1,2,3,0] },
+                { name: 'ENZO VITOR PEREIRA DA SILVA CALIXTO', scores: [2,2,0,3,1,0,0,1,0,1,2] },
+                { name: 'FELIPE DANIEL DE MELO PAIVA', scores: [4,5,1,1,1,1,2,0,2,3,1] },
+                { name: 'HEBERTI KAUÃ DA SILVA', scores: [3,4,0,2,1,0,1,0,1,1,0] },
+                { name: 'ISABELLA BUENO ALVES', scores: [3,5,1,3,2,3,3,3,1,0,2] },
+                { name: 'JORGE MIGUEL VIEIRA DE CARVALHO', scores: [1,4,0,3,3,2,1,1,0,2,0] },
+                { name: 'LUIS FERNANDO SILVA FEITOSA', scores: [1,5,0,3,3,0,2,1,1,2,0] },
+                { name: 'MARCOS SANTOS ALVES DA SILVA', scores: [2,5,1,3,3,2,0,2,2,2,1] },
+                { name: 'MARIA EDUARDA OLIVEIRA CARDOSO', scores: [1,4,1,3,0,1,0,2,1,3,1] },
+                { name: 'NATHAN CASTRO LIMA', scores: [0,2,1,3,1,0,2,1,0,1,0] },
+                { name: 'NICOLY DOMINGUES VASCONCELOS', scores: [4,5,0,3,2,2,3,3,0,2,2] },
+                { name: 'OTAVIO OLIVEIRA DA SILVA', scores: [3,5,1,3,2,0,2,1,1,2,0] },
+                { name: 'PEDRO HENRIQUE ALVES DE SOUZA', scores: [1,5,1,3,3,0,1,3,2,2,2] },
+                { name: 'PEDRO PAULO GUSMAO DE AMORIM', scores: [1,5,0,3,3,0,3,0,3,2,2] },
+                { name: 'RAISSA VITORIA BELLANO DE CAMARGO', scores: [4,4,1,3,3,2,1,2,2,2,1] },
+                { name: 'RAYSSA SOFIA ALVES DOS REIS', scores: [3,5,0,3,2,2,0,2,1,2,1] },
+                { name: 'SAMYRA CRISTINNY PORTO CUPERTINO', scores: [2,4,1,3,2,1,0,1,3,3,1] },
+                { name: 'SARA VASSAO DE CAMARGO', scores: [1,2,0,3,2,0,1,2,0,2,1] },
+                { name: 'SARAH ELOISA GOMES MARQUES', scores: [2,2,1,3,2,1,1,1,2,2,1] },
+                { name: 'SARAH KEIFER RIBEIRO', scores: [4,5,1,3,3,2,1,2,2,2,1] },
+                { name: 'SIDNEY PATRICK NASCIMENTO DIAS', scores: [3,4,1,3,0,2,3,2,1,2,1] },
+                { name: 'SOPHIA SANTOS OLIVEIRA', scores: [2,5,0,3,1,0,1,3,1,3,0] },
+                { name: 'VICTOR HUGO RIBEIRO DE MELO', scores: [4,5,1,3,3,1,3,1,2,3,2] },
+                { name: 'WANDERSON DANIEL DOS SANTOS DE OLIVEIRA', scores: [2,5,0,2,3,1,2,3,3,2,2] },
+                { name: 'WESLEY GABRIEL CAETANO DA SILVA', scores: [2,5,1,3,2,0,2,1,1,2,1] },
+                { name: 'YAN KALIL DIONISIO RODRIGUES DE OLIVEIRA', scores: [0,4,0,0,2,1,1,1,1,1,0] },
+                { name: 'YASMIN FERNANDA MARTINS SOUZA', scores: [2,4,0,3,2,1,1,1,3,2,0] },
+                { name: 'YNGRID SILVA DE JESUS', scores: [3,3,1,3,0,0,2,1,2,2,2] },
+            ],
+            '6A': [
+                { name: 'ABRAHAM JESUS ROJAS GONZALEZ', scores: [0,2,0,2,1,0,2,2,1,1,2] },
+                { name: 'ALANA PEREIRA DE JESUS', scores: [4,4,2,2,3,3,3,2,3,2,3] },
+                { name: 'ANNY BEATRIZ FARIAS MARTINS', scores: [4,4,2,2,1,3,3,3,2,2,3] },
+                { name: 'ARTHUR GUILHERME ARAÚJO FRANHAN', scores: [4,4,2,1,2,3,2,1,2,0,3] },
+                { name: 'CARLOS HENRIQUE VIANA BRASIL', scores: [4,3,2,2,0,3,1,2,1,2,0] },
+                { name: 'DAVI LUIS ROSA BRAGA DOS SANTOS', scores: [2,1,0,2,1,3,2,2,1,0,1] },
+                { name: 'DAVI MIGUEL PEREIRA ANHAIA', scores: [4,5,3,2,3,3,3,3,3,2,3] },
+                { name: 'EDUARDO DE SOUZA BARBOSA', scores: [4,5,2,2,2,2,2,2,2,3,0] },
+                { name: 'ELLEN DA SILVA PEREIRA', scores: [4,4,2,1,2,3,2,2,0,2,3] },
+                { name: 'EMELYN FERREIRA DE SOUZA', scores: [3,0,1,2,1,1,1,3,0,0,1] },
+                { name: 'EVANDRO VIEIRA DA SILVA', scores: [4,2,0,2,1,1,1,1,1,0,1] },
+                { name: 'GUILHERME OLIVEIRA DE SOUZA', scores: [4,4,2,3,3,3,3,2,3,2,3] },
+                { name: 'HELOISA SILVA DE DEUS SANTOS', scores: [4,3,2,3,2,3,3,3,3,3,1] },
+                { name: 'IAGO KAIQUE SANTOS MELO', scores: [3,1,1,0,1,0,0,1,1,0,0] },
+                { name: 'ISABELA SOPHIA PEREIRA DOS SANTOS', scores: [4,4,1,0,0,3,2,0,2,1,1] },
+                { name: 'ISABELA VIEIRA DANTAS', scores: [3,1,1,0,1,1,0,1,1,0,0] },
+                { name: 'ISAQUE VINICIUS DA SILVA SOARES', scores: [2,2,1,2,1,2,1,2,1,0,2] },
+                { name: 'KIMBERLLY SOPHIA NASCIMENTO DA SILVA', scores: [3,3,0,2,0,2,1,0,2,2,3] },
+                { name: 'LIVIA RODRIGUES DE LIMA', scores: [4,1,1,2,2,3,3,3,2,2,3] },
+                { name: 'LUAINNY PEREIRA ARAÚJO', scores: [4,3,0,2,2,3,2,2,0,2,1] },
+                { name: 'MARIA ESTHER MARTINS BARRETO', scores: [4,2,1,2,2,3,2,1,2,1,1] },
+                { name: 'NICOLAS BORGES DA SILVA', scores: [3,4,2,2,2,3,2,3,2,1,1] },
+                { name: 'PENÉLOPE MARTINELLI', scores: [5,3,1,3,1,3,2,3,2,2,3] },
+                { name: 'PHELIPE MATHEUS DE JESUS VAZ', scores: [4,2,2,0,3,3,2,1,0,1,3] },
+                { name: 'RAQUEL SAMIA SANTOS MELO', scores: [3,2,0,1,0,1,1,1,2,2,1] },
+                { name: 'RICKELMY ARCANJO RAYMUNDO', scores: [0,1,1,2,0,0,0,1,2,0,0] },
+                { name: 'SOPHIA DIAS DOS SANTOS', scores: [4,4,2,1,3,3,2,3,3,3,3] },
+                { name: 'SOPHIA VITORIA PRIETO LAMEU', scores: [4,4,2,1,1,3,2,2,3,3,3] },
+                { name: 'YURI AZEVEDO DA SILVA GOMES', scores: [3,2,2,1,1,2,3,1,2,2,2] },
+                { name: 'KAUAN FIGUEIREDO TONELLI VAZ', scores: [2,3,1,1,1,1,2,1,3,0,1] }
+            ]
+        };
+
+        // Calcular totais automaticamente
+        Object.values(allData).forEach(turma => {
+            turma.forEach(aluno => {
+                aluno.total = aluno.scores.reduce((a, b) => a + b, 0);
+            });
+        });
+
+        // Cache de referências ao DOM
+        const DOM = {
+            tbody:    null,
+            rankDiv:  null,
+            title:    null,
+            stats:    null,
+            footerDate: null,
+        };
+
+        let activeChart = null;
+
+        function getScoreColor(val) {
+            if (val >= 28) return '#16a34a'; // Excelente (Verde)
+            if (val >= 20) return '#2563eb'; // Bom (Azul)
+            if (val >= 12) return '#ea580c'; // Regular (Laranja)
+            return '#dc2626';                // Crítico (Vermelho)
+        }
+
+        function shortName(fullName) {
+            const parts = fullName.trim().split(' ');
+            return parts[0] + (parts.length > 1 ? ' ' + parts[parts.length - 1] : '');
+        }
+
+        function refreshReport(classId) {
+            const students = allData[classId] || [];
+            const presentStudents = students.filter(s => s.total > 0);
+
+            DOM.tbody.innerHTML = '';
+            DOM.rankDiv.innerHTML = '';
+
+            const sortedAlpha = [...presentStudents].sort((a, b) => a.name.localeCompare(b.name, 'pt'));
+            const sortedRank  = [...presentStudents].sort((a, b) => b.total - a.total);
+
+            const displayNames = {
+                '6A': '6.º Ano A', '6B': '6.º Ano B', '6C': '6.º Ano C',
+                '6D': '6.º Ano D', '6E': '6.º Ano E', '6F': '6.º Ano F',
+                '7A': '7.º Ano A', '7B': '7.º Ano B', '7C': '7.º Ano C',
+                '7D': '7.º Ano D', '7E': '7.º Ano E', '7F': '7.º Ano F',
+                '9A': '9.º Ano A', '9B': '9.º Ano B', '9C': '9.º Ano C',
+                '9D': '9.º Ano D', '9E': '9.º Ano E', '9F': '9.º Ano F'
+            };
+            DOM.title.textContent = `Análise Consolidada - ${displayNames[classId] || classId}`;
+            DOM.stats.textContent = `Alunos Presentes no Simulado: ${presentStudents.length}`;
+
+            // Preencher Tabela Principal
+            sortedAlpha.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                const scoreColor = getScoreColor(s.total);
+                tr.innerHTML = `
+                    <td>${idx + 1}</td>
+                    <td class="font-bold">${s.name}</td>
+                    ${s.scores.map(v => `<td>${v}</td>`).join('')}
+                    <td class="font-bold text-white" style="background-color:${scoreColor};border-color:#000;">${s.total}</td>
+                `;
+                DOM.tbody.appendChild(tr);
+            });
+
+            // Preencher Classificação
+            sortedRank.forEach((s, idx) => {
+                const scoreColor = getScoreColor(s.total);
+                const item = document.createElement('div');
+                item.className = 'ranking-item';
+                item.innerHTML = `
+                    <span class="font-bold text-white w-8 h-4 flex items-center justify-center rounded-sm mr-2 text-[7px]" style="background-color:${scoreColor}">
+                        ${idx + 1}º
+                    </span>
+                    <span class="flex-grow truncate px-1 font-bold uppercase text-slate-800">${shortName(s.name)}</span>
+                `;
+                DOM.rankDiv.appendChild(item);
+            });
+
+            // Gráfico Misto (Barra + Linha de Tendência)
+            if (activeChart) activeChart.destroy();
+            const ctx = document.getElementById('rankingChart').getContext('2d');
+            const pointColors = sortedRank.map(s => getScoreColor(s.total));
+
+            activeChart = new Chart(ctx, {
+                data: {
+                    labels: sortedRank.map(s => s.name.split(' ')[0]),
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Tendência',
+                            data: sortedRank.map(s => s.total),
+                            borderColor: '#334155',
+                            borderWidth: 1.5,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: pointColors,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            tension: 0.3,
+                            order: 1
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Pontos',
+                            data: sortedRank.map(s => s.total),
+                            backgroundColor: sortedRank.map(s => getScoreColor(s.total)),
+                            borderRadius: 10,
+                            borderSkipped: false,
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 40,
+                            title: { display: true, text: 'Pontos', font: { size: 9, weight: 'bold' } },
+                            ticks: { font: { size: 7, family: 'Arial' } }
+                        },
+                        x: {
+                            display: true,
+                            grid: { display: false },
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            DOM.tbody     = document.getElementById('studentTable');
+            DOM.rankDiv   = document.getElementById('rankingListContainer');
+            DOM.title     = document.getElementById('reportTitle');
+            DOM.stats     = document.getElementById('footerStats');
+            DOM.footerDate = document.getElementById('footerDate');
+
+            DOM.footerDate.textContent = `EMITIDO EM: ${new Date().toLocaleDateString('pt-BR')}`;
+
+            document.getElementById('classSelector').addEventListener('change', e => refreshReport(e.target.value));
+
+            document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+                const el = document.getElementById('reportDocument');
+                html2pdf().from(el).set({
+                    margin: 0,
+                    filename: `Simulado_2026_${document.getElementById('classSelector').value}.pdf`,
+                    html2canvas: { scale: 3, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                }).save();
+            });
+
+            document.getElementById('downloadImageBtn').addEventListener('click', () => {
+                html2canvas(document.getElementById('reportDocument'), { scale: 4 }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `Relatorio_${document.getElementById('classSelector').value}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+            });
+
+            refreshReport('6F');
+        });
+    </script>
+</body>
+</html>
